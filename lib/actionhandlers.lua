@@ -3,20 +3,6 @@ local actionhandlers = {};
 
 
 actionhandlers.parse_action_packet = function(act)
-    if not Self then
-        Self = GetPlayerEntity()
-        if not Self then
-            return act
-        end
-    end
-
-    if not SelfPlayer then
-        SelfPlayer = AshitaCore:GetMemoryManager():GetPlayer()
-        if not SelfPlayer then
-            return act
-        end
-    end
-
     -- Constructing table from act to work with, gathering info
 	act.actor = gActionHandlers.ActorParse(act.actor_id)
     act.action = gActionHandlers.SpellParse(act)
@@ -182,7 +168,7 @@ actionhandlers.parse_action_packet = function(act)
             if m.message ~= 0 and res_actmsg[m.message] ~= nil then
                 local col = res_actmsg[m.message].color
                 local targ =  gActionHandlers.AssembleTargets(act.actor, v.target, act.category, m.message)
-                local color = gActionHandlers.ColorFilt(col, v.target[1].server_id == Self.ServerId)
+                local color = gActionHandlers.ColorFilt(col, v.target[1].server_id == gStatus.PlayerId)
                 if gProfileSettings.lang.msg_text == 'jp' then
                     if m.reaction == 11 and act.category == 1 then m.simp_name = UTF8toSJIS:UTF8_to_SJIS_str_cnv('によって受け流された')
                     -- elseif m.reaction == 12 and act.category == 1 then m.simp_name = UTF8toSJIS:UTF8_to_SJIS_str_cnv('によってブロックされました')
@@ -345,7 +331,7 @@ actionhandlers.parse_action_packet = function(act)
                 end
 
                 local count = ''
-                if m.message == 377 and act.actor_id == Self.ServerId then
+                if m.message == 377 and act.actor_id == gStatus.PlayerId then
                     parse_quantity = true
                     item_quantity.id = act.action.item2_id
                     count = '${count}'
@@ -390,7 +376,7 @@ actionhandlers.parse_action_packet = function(act)
                 :gsub('${number}',(act.action.number or m.param)..roll)
                 :gsub('${status}',m.status or 'ERROR 120')
                 :gsub('${gil}',m.param..' gil'), m.message))
-                if m.message == 377 and act.actor_id == Self.ServerId then
+                if m.message == 377 and act.actor_id == gStatus.PlayerId then
                     gFuncs.SendDelayedMessage:bind1(color):bind1(message):once(0.5)
                 else
                     AshitaCore:GetChatManager():AddChatMessage(color, false, message)
@@ -402,7 +388,7 @@ actionhandlers.parse_action_packet = function(act)
             if m.has_add_effect and m.add_effect_message ~= 0 and add_effect_valid[act.category] then
                 local targ = gActionHandlers.AssembleTargets(act.actor, v.target, act.category, m.add_effect_message, m.has_add_effect)
                 local col = res_actmsg[m.add_effect_message].color
-                local color = gActionHandlers.ColorFilt(col, v.target[1].server_id == Self.ServerId)
+                local color = gActionHandlers.ColorFilt(col, v.target[1].server_id == gStatus.PlayerId)
                 if m.add_effect_message > 287 and m.add_effect_message < 303 then m.simp_add_name = UTF8toSJIS:UTF8_to_SJIS_str_cnv(skillchain_arr[gProfileSettings.lang.msg_text][m.add_effect_message-287])
                 elseif m.add_effect_message > 384 and m.add_effect_message < 399 then m.simp_add_name = UTF8toSJIS:UTF8_to_SJIS_str_cnv(skillchain_arr[gProfileSettings.lang.msg_text][m.add_effect_message-384])
                 elseif m.add_effect_message > 766 and m.add_effect_message < 769 then m.simp_add_name = UTF8toSJIS:UTF8_to_SJIS_str_cnv(skillchain_arr[gProfileSettings.lang.msg_text][m.add_effect_message-752])
@@ -457,7 +443,7 @@ actionhandlers.parse_action_packet = function(act)
             if m.has_spike_effect and m.spike_effect_message ~= 0 and spike_effect_valid[act.category] then
                 local targ = gActionHandlers.AssembleTargets(act.actor, v.target, act.category, m.spike_effect_message, m.has_spike_effect)
                 local col = res_actmsg[m.spike_effect_message].color
-                local color = gActionHandlers.ColorFilt(col, act.actor.id == Self.ServerId)
+                local color = gActionHandlers.ColorFilt(col, act.actor.id == gStatus.PlayerId)
 
                 local actor = act.actor
                 if m.spike_effect_message == 14 then
@@ -904,7 +890,7 @@ actionhandlers.ActorParse = function (actor_id)
                 dmg = 'mobdmg'
 
                 if gProfileFilter.enemies then
-                    for i,v in pairs(SelfPlayer:GetBuffs()) do
+                    for i,v in pairs(AshitaCore:GetMemoryManager():GetPlayer():GetBuffs()) do
                         if domain_buffs:contains(v) then
                             -- If you are in Domain Invasion, or a Reive, or various other places
                             -- then all monsters should be considered enemies.

@@ -6,13 +6,8 @@ local status = {
 	CurrentFilters = nil;
 };
 
-Self = nil;
-SelfPlayer = nil;
-
 status.Init = function()
 	if (AshitaCore:GetMemoryManager():GetParty():GetMemberIsActive(0) == 1) then
-		Self = GetPlayerEntity()
-		SelfPlayer = AshitaCore:GetMemoryManager():GetPlayer()
 		gStatus.PlayerId = AshitaCore:GetMemoryManager():GetParty():GetMemberServerId(0);
 		gStatus.PlayerName = AshitaCore:GetMemoryManager():GetParty():GetMemberName(0);
 		gStatus.PlayerJob = AshitaCore:GetMemoryManager():GetPlayer():GetMainJob();
