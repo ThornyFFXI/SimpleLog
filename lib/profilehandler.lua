@@ -12,7 +12,6 @@ status.Init = function()
 		gStatus.PlayerName = AshitaCore:GetMemoryManager():GetParty():GetMemberName(0);
 		gStatus.PlayerJob = AshitaCore:GetMemoryManager():GetPlayer():GetMainJob();
 		gStatus.SettingsFolder = ('%sconfig\\addons\\simplelog\\%s_%u\\'):fmt(AshitaCore:GetInstallPath(), gStatus.PlayerName, gStatus.PlayerId);
-		gStatus.AutoLoadProfile();
 
 		if (get_weapon_skill == nil or get_spell == nil or get_item == nil) then
 			gFuncs.PopulateSkills()
@@ -20,6 +19,7 @@ status.Init = function()
 			gFuncs.PopulateItems()
 		end
 	end
+	gStatus.AutoLoadProfile();
 end
 
 status.AutoLoadProfile = function()
