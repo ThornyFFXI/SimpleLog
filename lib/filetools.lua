@@ -13,55 +13,34 @@ local CreateDirectories = function(path)
 end
 
 
-local CreateNewProfile = function(path, file_name)
-    if ashita.fs.exists(path) then
-        gFuncs.Error('Profile already exists: ' .. path);
+local CopyFile = function(source, destination, overwrite)
+    if ashita.fs.exists(destination) and (not overwrite) then
+        gFuncs.Error('File already exists: ' .. destination);
         return false;
     end
 
-    if (CreateDirectories(path) == false) then        
+    if (CreateDirectories(destination) == false) then
         return;
     end
 
-    local file = io.open(path, 'w');
-    if (file == nil) then
-        gFuncs.Error('Failed to access file: ' .. path);
-        return false;
-    end
-	
-	local src_profile_path = ('%saddons\\simplelog\\%s.lua'):fmt(AshitaCore:GetInstallPath(), file_name);
-	local src_profile_file = io.open(src_profile_path, 'r');
-	local src_profile_data = src_profile_file:read('*all');
-	file:write(src_profile_data);
-	file:close();
-	src_profile_file:close();
-	return true;
-end
-
-
-local OverwriteProfile = function (path, source_path)
-    if (CreateDirectories(path) == false) then
-        return;
-    end
-
-    if ashita.fs.exists(path) then
-        os.remove(path)
-    end
-
-    local file = io.open(path, 'w');
-    if (file == nil) then
-        gFuncs.Error('Failed to access file: ' .. path);
+    local destination_file = io.open(destination, 'w');
+    if (destination_file == nil) then
+        gFuncs.Error('Failed to access file: ' .. destination);
         return false;
     end
 
-	local src_profile_file = io.open(source_path, 'r');
-	local src_profile_data = src_profile_file:read('*all');
-	file:write(src_profile_data);
-	file:close();
-	src_profile_file:close();
+	local source_file = io.open(source, 'r');
+    if not source_file then
+        gFuncs.Error('Failed to access file: ' .. source);
+        destination_file:close();
+        return false;
+    end
+
+	destination_file:write(source_file:read('*all'));
+	destination_file:close();
+	source_file:close();
 	return true;
 end
-
 
 local SaveChanges = function (path, mod_table, file_type)
     if (CreateDirectories(path) == false) then
@@ -152,7 +131,7 @@ end
 
 local exports = {
     CreateDirectories = CreateDirectories,
-	CreateNewProfile = CreateNewProfile,
+	CopyFile = CopyFile,
     OverwriteProfile = OverwriteProfile,
     SaveChanges = SaveChanges,
 };

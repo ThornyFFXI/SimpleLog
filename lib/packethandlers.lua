@@ -60,11 +60,6 @@ packethandlers.HandleIncoming0x00A = function(e)
 		gStatus.SettingsFolder = ('%sconfig\\addons\\simplelog\\%s_%u\\'):fmt(AshitaCore:GetInstallPath(), gStatus.PlayerName, gStatus.PlayerId);
         gStatus.AutoLoadProfile();
     end
-    if (get_weapon_skill == nil or get_spell == nil or get_item == nil) then
-        gFuncs.PopulateSkills();
-        gFuncs.PopulateSpells();
-        gFuncs.PopulateItems();
-    end
 end
 
 packethandlers.HandleIncoming0x28 = function(e)
@@ -342,8 +337,7 @@ packethandlers.HandleIncomingPacket = function(e)
         local old_job = AshitaCore:GetResourceManager():GetString("jobs.names_abbr", gStatus.PlayerJob)
         if new_job ~= old_job then
             gStatus.PlayerJob = e.data:byte(9)
-            local jobFiltersFile = (gStatus.SettingsFolder .. '%s.lua'):fmt(new_job)
-            gStatus.LoadProfile(jobFiltersFile, 'filters')
+            gStatus.LoadFilters();
         end
     end
 end

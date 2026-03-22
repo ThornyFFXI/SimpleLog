@@ -12,107 +12,125 @@ status.Init = function()
 		gStatus.PlayerName = AshitaCore:GetMemoryManager():GetParty():GetMemberName(0);
 		gStatus.PlayerJob = AshitaCore:GetMemoryManager():GetPlayer():GetMainJob();
 		gStatus.SettingsFolder = ('%sconfig\\addons\\simplelog\\%s_%u\\'):fmt(AshitaCore:GetInstallPath(), gStatus.PlayerName, gStatus.PlayerId);
-
-		if (get_weapon_skill == nil or get_spell == nil or get_item == nil) then
-			gFuncs.PopulateSkills()
-			gFuncs.PopulateSpells()
-			gFuncs.PopulateItems()
-		end
 	end
+	
+	gFuncs.PopulateSkills()
+	gFuncs.PopulateSpells()
+	gFuncs.PopulateItems()
 	gStatus.AutoLoadProfile();
 end
 
 status.AutoLoadProfile = function()
-	local defaultSettingsFile = gStatus.SettingsFolder .. 'config.lua';
-	local defaultFiltersFile = gStatus.SettingsFolder .. 'default_filters.lua';
-	local defaultColorsFile = gStatus.SettingsFolder .. 'chat_colors.lua';
-	local jobFiltersFile = (gStatus.SettingsFolder .. '%s.lua'):fmt(AshitaCore:GetResourceManager():GetString("jobs.names_abbr", gStatus.PlayerJob));
-	
-	if (not ashita.fs.exists(defaultSettingsFile)) then
-		gFileTools.CreateNewProfile(defaultSettingsFile, 'configuration');
-		print(chat.header('SimpleLog') .. chat.message('Created config file: ') .. chat.color1(2, 'config.lua'));
-		gStatus.LoadProfile(defaultSettingsFile, 'config');
-	elseif (ashita.fs.exists(defaultSettingsFile)) then
-		gStatus.LoadProfile(defaultSettingsFile, 'config');	
-	end
-	
-	if (not ashita.fs.exists(jobFiltersFile)) then
-		if (not ashita.fs.exists(defaultFiltersFile)) then
-			gFileTools.CreateNewProfile(defaultFiltersFile, 'filters');
-			print(chat.header('SimpleLog') .. chat.message('Created filters profile: ') .. chat.color1(2, 'default_filters.lua'));
-			gStatus.LoadProfile(defaultFiltersFile, 'filters');
-		elseif (ashita.fs.exists(defaultFiltersFile)) then
-			gStatus.LoadProfile(defaultFiltersFile, 'filters');
-		end
-	elseif (ashita.fs.exists(jobFiltersFile)) then
-		gStatus.LoadProfile(jobFiltersFile, 'filters');	
-	end
-	
-	if (not ashita.fs.exists(defaultColorsFile)) then
-		gFileTools.CreateNewProfile(defaultColorsFile, 'colors');
-		print(chat.header('SimpleLog') .. chat.message('Created color profile: ') .. chat.color1(2, 'chat_colors.lua'));
-		gStatus.LoadProfile(defaultColorsFile, 'colors');
-	elseif (ashita.fs.exists(defaultColorsFile)) then
-		gStatus.LoadProfile(defaultColorsFile, 'colors');	
-	end
+	-- Disable static_config flag, it will be re-enabled if any portion of profile fails to load.
+	static_config = false;
+	status.LoadConfiguration();
+	status.LoadFilters();
+	status.LoadColors();
 end
 
-status.LoadProfile = function(profilePath, profileType)
-    local shortFileName = profilePath:match("[^\\]*.$");
-    local success, loadError = loadfile(profilePath);
+local function TryLoadFile(path)
+    local success, loadError = loadfile(path);
+	if not success then
+		print(chat.header('SimpleLog') .. chat.error('Failed to load file: ') .. chat.color1(2, path));
+		print(chat.header('SimpleLog') .. chat.error(loadError));
+		return;
+	end
+	
+    local result, output = pcall(success);
+    if not result then
+		print(chat.header('SimpleLog') .. chat.error('Failed to execute file: ') .. chat.color1(2, path));
+		print(chat.header('SimpleLog') .. chat.error(loadError));
+        return;
+    end
 
-	if (profileType == 'config') then
-		if not success then
-			gProfileSettings = static_settings;
-			print(chat.header('SimpleLog') .. chat.error('Failed to load configuration file: ') .. chat.color1(2, shortFileName)..chat.error('\nSaving will be disabled.'));
-			print(chat.header('SimpleLog') .. chat.error(loadError));
-			static_config = true
+	return output;
+end
+
+status.LoadConfiguration = function()
+	if gStatus.SettingsFolder then
+		-- Check if settings exist, create if not.
+		local configPath = gStatus.SettingsFolder .. 'config.lua';
+		if not ashita.fs.exists(configPath) then
+			local sourceFile = ('%saddons\\simplelog\\configuration.lua'):fmt(AshitaCore:GetInstallPath());
+			gFileTools.CopyFile(sourceFile, configPath, false);
+		end
+
+		-- Attempt to load settings.
+		local config = TryLoadFile(configPath);
+		if config then
+			print(chat.header('SimpleLog') .. chat.message('Loaded configuration file: ') .. chat.color1(2, configPath:match("[^\\]*.$")));
+			gProfileSettings = config;
 			return;
 		end
-		gProfileSettings = success();
-		if (gProfileSettings ~= nil) then
-			print(chat.header('SimpleLog') .. chat.message('Loaded configuration file: ') .. chat.color1(2, shortFileName));
-		end
+
+		print(chat.header('SimpleLog') .. chat.error("Could not load default configuration file. Saving will be disabled."));
 	end
 	
-	if (profileType == 'filters') then
-		if not success then
-			local defaultFiltersFile = gStatus.SettingsFolder .. 'default_filters.lua';
-			print(chat.header('SimpleLog') .. chat.error('Failed to load filters profile: ') .. chat.color1(2, shortFileName) .. chat.error(' loading defaults: ' .. chat.color1(2, 'default_filters.lua')));
-			print(chat.header('SimpleLog') .. chat.error(loadError));
-			local default_success, default_loadError = loadfile(defaultFiltersFile)
-			if not default_success then
-				gProfileFilter = static_filters;
-				print(chat.header('SimpleLog') .. chat.error('Failed to load filters profile: ') .. chat.color1(2, 'default_filters.lua')..chat.error('\nSaving will be disabled.'));
-				print(chat.header('SimpleLog') .. chat.error(default_loadError));
-				static_config = true
-				return
+	-- Fall back on defaults..
+	gProfileSettings = static_settings;
+	static_config = true;
+end
+
+status.LoadFilters = function()
+	if gStatus.SettingsFolder then
+
+		-- Check if job specific filters exist and attempt to load if so.
+		local defaultFilterPath = gStatus.SettingsFolder .. 'default_filters.lua';
+		local jobFilterPath = (gStatus.SettingsFolder .. '%s.lua'):fmt(AshitaCore:GetResourceManager():GetString("jobs.names_abbr", gStatus.PlayerJob));
+		if ashita.fs.exists(jobFilterPath) then
+			local filters = TryLoadFile(jobFilterPath);
+			if filters then
+				gProfileFilter = filters;
+				print(chat.header('SimpleLog') .. chat.message('Loaded job filters: ') .. chat.color1(2, jobFilterPath:match("[^\\]*.$")));
+				return;
 			end
-			gProfileFilter = default_success();
-			gStatus.CurrentFilters = 'default_filters.lua'
+		end
+
+		-- Create default filters file if it doesn't exist yet.
+		if not ashita.fs.exists(defaultFilterPath) then
+			local sourceFile = ('%saddons\\simplelog\\filters.lua'):fmt(AshitaCore:GetInstallPath());
+			gFileTools.CopyFile(sourceFile, defaultFilterPath, false);
+		end
+
+		-- Attempt to load filters.
+		local filters = TryLoadFile(defaultFilterPath);
+		if filters then
+			gProfileFilter = filters;
+			print(chat.header('SimpleLog') .. chat.message('Loaded filters: ') .. chat.color1(2, defaultFilterPath:match("[^\\]*.$")));
 			return;
-		else
-			gProfileFilter = success();
 		end
-		if (gProfileFilter ~= nil) then
-			print(chat.header('SimpleLog') .. chat.message('Loaded filters profile: ') .. chat.color1(2, shortFileName));
-			gStatus.CurrentFilters = shortFileName
-		end
+		
+		print(chat.header('SimpleLog') .. chat.error("Could not load default filters. Saving will be disabled."));
 	end
 	
-	if (profileType == 'colors') then
-		if not success then
-			gProfileColor = static_colors;
-			print(chat.header('SimpleLog') .. chat.error('Failed to load colors profile: ') .. chat.color1(2, shortFileName)..chat.error('\nSaving will be disabled.'));
-			print(chat.header('SimpleLog') .. chat.error(loadError));
-			static_config = true
+	-- Fall back on defaults..
+	gProfileFilter = static_filters;
+	static_config = true;
+end
+
+status.LoadColors = function()
+	if gStatus.SettingsFolder then
+		-- Check if colors file exists and create if not.
+		local colorsPath = gStatus.SettingsFolder .. 'chat_colors.lua';
+		if not ashita.fs.exists(colorsPath) then
+			local sourceFile = ('%saddons\\simplelog\\colors.lua'):fmt(AshitaCore:GetInstallPath());
+			gFileTools.CopyFile(sourceFile, colorsPath, false);
+		end
+
+		-- Attempt to load color file.
+		local colors = TryLoadFile(colorsPath);
+		if colors then
+			print(chat.header('SimpleLog') .. chat.message('Loaded colors file: ') .. chat.color1(2, colorsPath:match("[^\\]*.$")));
+			gProfileColor = colors;
 			return;
 		end
-		gProfileColor = success();
-		if (gProfileColor ~= nil) then
-			print(chat.header('SimpleLog') .. chat.message('Loaded colors profile: ') .. chat.color1(2, shortFileName));
-		end
+
+		print(chat.header('SimpleLog') .. chat.error("Could not load default colors file. Saving will be disabled."));
 	end
+	
+	-- Fall back on defaults..
+	gProfileColor = static_colors;
+	static_config = true;
 end
 
 return status;
