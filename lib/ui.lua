@@ -284,6 +284,13 @@ ui.render_config = function(toggle)
                         imgui.SameLine()
                         imgui.TextColored(theme.header_text_col, 'Simplify')
                         imgui.TextColored(theme.desc_text_col, 'Condense battle text into shorter custom messages.')
+                        local debug_messages_change = imgui.Checkbox('##debug_messages', {gProfileSettings.mode.show_debug_messages or false});
+                        if debug_messages_change then
+                            gProfileSettings.mode.show_debug_messages = not gProfileSettings.mode.show_debug_messages;
+                        end
+                        imgui.SameLine()
+                        imgui.TextColored(theme.header_text_col, 'Debug Messages')
+                        imgui.TextColored(theme.desc_text_col, 'Show debug messages when targets fail to resolve.')
 
                         imgui.NewLine()
                         local condensetargets_change = imgui.Checkbox('##condensetargets', {gProfileSettings.mode.condensetargets})
@@ -293,6 +300,7 @@ ui.render_config = function(toggle)
                         imgui.SameLine()
                         imgui.TextColored(theme.header_text_col, 'Condense Targets')
                         imgui.TextColored(theme.desc_text_col, 'Condense the damage into a single digit.')
+
 
                         if gProfileSettings.mode.condensetargets then
                             imgui.TextColored(theme.header_text_col, '\xef\x8c\x8b')

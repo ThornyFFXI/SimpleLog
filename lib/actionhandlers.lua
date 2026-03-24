@@ -10,7 +10,9 @@ actionhandlers.parse_action_packet = function(act)
     targets_condensed = false
 
     if not act.action then
-        print(chat.header('SimpleLogDebug') .. chat.message('No Action MSG'))
+        if gProfileSettings.mode.show_debug_messages then
+            print(chat.header('SimpleLog') .. chat.error("Received a packet with no action message."))
+        end
         return act
     end
 
@@ -829,100 +831,105 @@ actionhandlers.MakeCondesedamageNumber = function (number)
     end
 end
 
-actionhandlers.ActorParse = function (actor_id)
+actionhandlers.ActorParse = function(actor_id)
     local actor_table = gFuncs.GetEntityByServerId(actor_id)
     local actor_name, typ, dmg, owner, filt, owner_name
 
     if actor_table == nil then
-        --return {name= nil, id=nil, is_npc=nil, type='debug', owner=nil, owner_name=nil, race=nil}
-        return {name= ('{Debug ID: %s}'):fmt(actor_id), id= '{DebugID}', is_npc= true, type= 'debug', damage= 'otherdmg', filter= 'others', owner= 'other', owner_name= '{Owner}', race= 0}
-    end
-
-    local ActorIsNpc = bit.band(actor_table.SpawnFlags, 0x1) == 0
-
-    for i,v in pairs(gFuncs.GetPartyData()) do
-        if type(v) == 'table' and v.mob and v.mob.ServerId == actor_table.ServerId then
-            typ = i
-            if i == 'p0' then
-                filt = 'me'
-                dmg = 'mydmg'
-            elseif i:sub(1, 1) == 'p' then
-                filt = 'party'
-                dmg = 'partydmg'
-            else
-                filt = 'alliance'
-                dmg = 'allydmg'
-            end
-        end
-    end
-
-    if not filt then
-        if ActorIsNpc then
-            if actor_table.TargetIndex > 1791 then
-                typ = 'other_pets'
-                filt = 'other_pets'
-                owner = 'other'
-                dmg = 'otherdmg'
-                for i, v in pairs(gFuncs.GetPartyData()) do
-                    if type(v) == 'table' and v.mob and v.mob.PetTargetIndex and v.mob.PetTargetIndex == actor_table.TargetIndex then
-                        if i == 'p0' then
-                            typ = 'my_pet'
-                            filt = 'my_pet'
-                            dmg = 'mydmg'
-                        end
-                        owner = i
-                        owner_name = gProfileSettings.mode.showpetownernames and ' ('..gFuncs.ColorIt(v.mob.Name, gProfileColor[owner or typ])..') '
-                        break
-                    elseif type(v) == 'table' and v.mob and v.mob.FellowTargetIndex and v.mob.FellowTargetIndex == actor_table.TargetIndex then
-                        if i == 'p0' then
-                            typ = 'my_fellow'
-                            filt = 'my_fellow'
-                            dmg = 'mydmg'
-                        end
-                        owner = i
-                        owner_name = gProfileSettings.mode.showpetownernames and ' ('..gFuncs.ColorIt(v.mob.Name, gProfileColor[owner or typ])..') '
-                        break
-                    end
-                end
-            else
-                typ = 'mob'
-                filt = 'monsters'
-                dmg = 'mobdmg'
-
-                if gProfileFilter.enemies then
-                    for i,v in pairs(AshitaCore:GetMemoryManager():GetPlayer():GetBuffs()) do
-                        if domain_buffs:contains(v) then
-                            -- If you are in Domain Invasion, or a Reive, or various other places
-                            -- then all monsters should be considered enemies.
-                            filt = 'enemies'
-                            break
-                        end
-                    end
-
-                    if filt ~= 'enemies' then
-                        for i,v in pairs(gFuncs.GetPartyData()) do
-                            if type(v) == 'table' and gFuncs.nf(v.mob, 'ServerId') == bit.band(actor_table.ClaimStatus, 0xFFFFFFFFFF) then
-                                filt = 'enemies'
-                                break
-                            end
-                        end
-                    end
-                end
-            end
+        if gProfileSettings.mode.show_debug_messages then
+            return {name= ('{Debug ID: %s}'):fmt(actor_id), id=actor_id, is_npc= true, type='debug', damage= 'otherdmg', filter= 'others', owner= 'other', owner_name='', race= 0}
         else
-            typ = 'other'
-            filt = 'others'
-            dmg = 'otherdmg'
+            return {name='{Unknown}', id=actor_id, is_npc= true, type='debug', damage= 'otherdmg', filter= 'others', owner= 'other', owner_name='', race= 0}
         end
     end
 
+    local spawnFlags = actor_table.SpawnFlags;
+    if (bit.band(spawnFlags, 0x200) == 0x200) then
+        typ = 'p0';
+        filt = 'me';
+        dmg = 'mydmg';
+    elseif (bit.band(spawnFlags, 0x04) == 0x04) then
+        typ = gFuncs.GetPartyType(actor_id);
+        filt = 'party';
+        dmg = 'partydmg';
+    elseif (bit.band(spawnFlags, 0x08) == 0x08) then
+        typ = gFuncs.GetPartyType(actor_id);
+        filt = 'alliance';
+        dmg = 'allydmg';
+    elseif (bit.band(spawnFlags, 0x01) == 1) then
+        typ = 'other'
+        filt = 'others'
+        dmg = 'otherdmg'
+    elseif (bit.band(spawnFlags, 0x10) == 0x10) then
+        typ = 'mob'
+        filt = 'monsters'
+        dmg = 'mobdmg'
+
+        if gProfileFilter.enemies then
+            for i,v in pairs(AshitaCore:GetMemoryManager():GetPlayer():GetBuffs()) do
+                if domain_buffs:contains(v) then
+                    -- If you are in Domain Invasion, or a Reive, or various other places
+                    -- then all monsters should be considered enemies.
+                    filt = 'enemies'
+                    break
+                end
+            end
+
+            if filt ~= 'enemies' then
+                for i,v in pairs(gFuncs.GetPartyData()) do
+                    if type(v) == 'table' and gFuncs.nf(v.mob, 'ServerId') == bit.band(actor_table.ClaimStatus, 0xFFFFFFFFFF) then
+                        filt = 'enemies'
+                        break
+                    end
+                end
+            end
+        end
+    elseif (bit.band(spawnFlags, 0x100)) then
+        -- Standard pets here..
+        typ = 'other_pets'
+        filt = 'other_pets'
+        owner = 'other'
+        dmg = 'otherdmg'
+
+        local ownerEntity = gFuncs.FindPetOwner(actor_table.TargetIndex);
+        if ownerEntity then
+            if (ownerEntity.Id == gStatus.PlayerId) then
+                typ = 'my_pet'
+                filt = 'my_pet'
+                dmg = 'mydmg'
+            end
+            owner = gFuncs.GetPartyType(ownerEntity.Id);
+            if gProfileSettings.mode.showpetownernames then
+                owner_name = ' ('..gFuncs.ColorIt(ownerEntity.Name, gProfileColor[owner or typ])..') ';
+            end
+        end
+    else
+        typ = 'other_pets'
+        filt = 'other_pets'
+        owner = 'other'
+        dmg = 'otherdmg'
+
+        local ownerEntity = gFuncs.FindFellowOwner(actor_table.TargetIndex);
+        if ownerEntity then
+            if (ownerEntity.Id == gStatus.PlayerId) then
+                typ = 'my_fellow'
+                filt = 'my_fellow'
+                dmg = 'mydmg'
+            end
+            owner = gFuncs.GetPartyType(ownerEntity.Id);
+            if gProfileSettings.mode.showpetownernames then
+                owner_name = ' ('..gFuncs.ColorIt(ownerEntity.Name, gProfileColor[owner or typ])..') ';
+            end
+        end
+    end
+    
     if actor_table.MonstrosityName ~= ' ' then
         actor_name = actor_table.Name
     else
         actor_name = actor_table.MonstrosityName
     end
 
-    return {name = actor_name, id = actor_id, is_npc = ActorIsNpc, type = typ, damage = dmg, filter = filt, owner = (owner or nil), owner_name = (owner_name or ''), race = actor_table.Race}
+    return {name = actor_name, id = actor_id, is_npc=(bit.band(spawnFlags, 0x01) ~= 1), type = typ, damage = dmg, filter = filt, owner = (owner or nil), owner_name = (owner_name or ''), race = actor_table.Race}
 end
 
 actionhandlers.SpellParse = function (act)

@@ -24,6 +24,7 @@ local settings = T{
 		showguards = true,
 		showcritws = false,
 		showrollinfo = false,
+		show_debug_messages = false,
 	},
 	text = T{
 		line_aoe		= 'AOE ${numb} '..string.char(129,168)..' ${target}',

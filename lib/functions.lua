@@ -102,37 +102,6 @@ local GetEntityByServerId = function(sid)
     return nil;
 end
 
-local GetPartyData = function()
-	local resource = {}
-
-	parse_party(resource, 'p', 0, AshitaCore:GetMemoryManager():GetParty():GetAlliancePartyMemberCount1())
-	parse_party(resource, 'al', 6, AshitaCore:GetMemoryManager():GetParty():GetAlliancePartyMemberCount2())
-	parse_party(resource, 'a2', 12, AshitaCore:GetMemoryManager():GetParty():GetAlliancePartyMemberCount3())
-
-	return resource
-end
-
-function parse_party(resource, party, mod, count)
-	if count == 0 or count > 6 then
-		return
-	end
-
-	for i = 0, count - 1 do
-		local index = i + mod
-		local id = party .. i
-		resource[id] = {}
-		resource[id]['hp'] = AshitaCore:GetMemoryManager():GetParty():GetMemberHP(index)
-		resource[id]['hpp'] = AshitaCore:GetMemoryManager():GetParty():GetMemberHPPercent(index)
-		resource[id]['mp'] = AshitaCore:GetMemoryManager():GetParty():GetMemberMP(index)
-		resource[id]['mpp'] = AshitaCore:GetMemoryManager():GetParty():GetMemberMPPercent(index)
-		resource[id]['tp'] = AshitaCore:GetMemoryManager():GetParty():GetMemberTP(index)
-		resource[id]['zone'] = AshitaCore:GetMemoryManager():GetParty():GetMemberZone(index)
-		resource[id]['zone2'] = AshitaCore:GetMemoryManager():GetParty():GetMemberZone2(index)
-		resource[id]['name'] = AshitaCore:GetMemoryManager():GetParty():GetMemberName(index)
-		resource[id]['mob'] = GetEntity(AshitaCore:GetMemoryManager():GetParty():GetMemberTargetIndex(index))
-	end
-end
-
 local nf = function(field, subfield)
 	if field ~= nil then
 		return field[subfield]
@@ -490,13 +459,50 @@ local Error = function(text)
     print(chat.header('SimpleLog') .. chat.error(text));
 end
 
+local GetPartyType = function(actor_id)
+    local pMgr = AshitaCore:GetMemoryManager():GetParty()
+    for i = 0,17 do
+        if pMgr:GetMemberIsActive(i) and pMgr:GetMemberServerId(i) == actor_id then
+            if i < 6 then
+                return ('p%u'):fmt(i)
+            elseif i < 12 then
+                return ('a1%u'):fmt(i-6)
+            else
+                return ('a2%u'):fmt(i-12)
+            end
+        end
+    end
+    return 'other'
+end
+
+local function FindPetOwner(pet_index)
+    for x = 0, 2303 do
+        local ent = GetEntity(x);
+        if (ent ~= nil and ent.PetTargetIndex == pet_index) then
+            return ent;
+        end
+    end
+    return nil;
+end
+
+local function FindFellowOwner(fellow_index)
+    for x = 0, 2303 do
+        local ent = GetEntity(x);
+        if (ent ~= nil and ent.FellowTargetIndex == fellow_index) then
+            return ent;
+        end
+    end
+    return nil;
+end
 
 local exports = {
 	PopulateSkills = PopulateSkills,
 	PopulateSpells = PopulateSpells,
 	PopulateItems = PopulateItems,
+	FindPetOwner = FindPetOwner,
+	FindFellowOwner = FindFellowOwner,
 	GetEntityByServerId = GetEntityByServerId,
-	GetPartyData = GetPartyData,
+	GetPartyType = GetPartyType,
 	nf = nf,
 	Flip = Flip,
 	ColorIt = ColorIt,
