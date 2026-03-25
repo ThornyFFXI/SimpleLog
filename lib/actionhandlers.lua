@@ -876,8 +876,10 @@ actionhandlers.ActorParse = function(actor_id)
             end
 
             if filt ~= 'enemies' then
-                for i,v in pairs(gFuncs.GetPartyData()) do
-                    if type(v) == 'table' and gFuncs.nf(v.mob, 'ServerId') == bit.band(actor_table.ClaimStatus, 0xFFFFFFFFFF) then
+                local claimStatus = bit.band(actor_table.ClaimStatus, 0xFFFFFFFFFF);
+                local ptMgr = AshitaCore:GetMemoryManager():GetParty();
+                for i = 0,17 do
+                    if (ptMgr:GetMemberIsActive(i) == 1) and (ptMgr:GetMemberServerId(i) == claimStatus) then
                         filt = 'enemies'
                         break
                     end

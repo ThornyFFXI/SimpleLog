@@ -462,7 +462,7 @@ end
 local GetPartyType = function(actor_id)
     local pMgr = AshitaCore:GetMemoryManager():GetParty()
     for i = 0,17 do
-        if pMgr:GetMemberIsActive(i) and pMgr:GetMemberServerId(i) == actor_id then
+        if (pMgr:GetMemberIsActive(i) == 1) and pMgr:GetMemberServerId(i) == actor_id then
             if i < 6 then
                 return ('p%u'):fmt(i)
             elseif i < 12 then
