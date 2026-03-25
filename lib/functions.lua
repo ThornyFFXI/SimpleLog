@@ -466,7 +466,7 @@ local GetPartyType = function(actor_id)
             if i < 6 then
                 return ('p%u'):fmt(i)
             elseif i < 12 then
-                return ('a1%u'):fmt(i-6)
+                return ('al%u'):fmt(i-6)
             else
                 return ('a2%u'):fmt(i-12)
             end

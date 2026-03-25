@@ -81,7 +81,9 @@ status.LoadFilters = function()
 			local filters = TryLoadFile(jobFilterPath);
 			if filters then
 				gProfileFilter = filters;
-				print(chat.header('SimpleLog') .. chat.message('Loaded job filters: ') .. chat.color1(2, jobFilterPath:match("[^\\]*.$")));
+				local shortFileName = jobFilterPath:match("[^\\]*.$")
+				print(chat.header('SimpleLog') .. chat.message('Loaded job filters: ') .. chat.color1(2, shortFileName));
+				gStatus.CurrentFilters = shortFileName
 				return;
 			end
 		end
@@ -96,7 +98,9 @@ status.LoadFilters = function()
 		local filters = TryLoadFile(defaultFilterPath);
 		if filters then
 			gProfileFilter = filters;
-			print(chat.header('SimpleLog') .. chat.message('Loaded filters: ') .. chat.color1(2, defaultFilterPath:match("[^\\]*.$")));
+			local shortFileName = defaultFilterPath:match("[^\\]*.$")
+			print(chat.header('SimpleLog') .. chat.message('Loaded filters: ') .. chat.color1(2, shortFileName));
+			gStatus.CurrentFilters = shortFileName
 			return;
 		end
 		
@@ -106,6 +110,7 @@ status.LoadFilters = function()
 	-- Fall back on defaults..
 	gProfileFilter = static_filters;
 	static_config = true;
+	gStatus.CurrentFilters = 'default_filters.lua'
 end
 
 status.LoadColors = function()
