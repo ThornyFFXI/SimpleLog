@@ -900,7 +900,7 @@ actionhandlers.ActorParse = function(actor_id)
                 filt = 'my_pet'
                 dmg = 'mydmg'
             end
-            owner = gFuncs.GetPartyType(ownerEntity.Id);
+            owner = gFuncs.GetPartyType(ownerEntity.ServerId);
             if gProfileSettings.mode.showpetownernames then
                 owner_name = ' ('..gFuncs.ColorIt(ownerEntity.Name, gProfileColor[owner or typ])..') ';
             end
@@ -918,7 +918,7 @@ actionhandlers.ActorParse = function(actor_id)
                 filt = 'my_fellow'
                 dmg = 'mydmg'
             end
-            owner = gFuncs.GetPartyType(ownerEntity.Id);
+            owner = gFuncs.GetPartyType(ownerEntity.ServerId);
             if gProfileSettings.mode.showpetownernames then
                 owner_name = ' ('..gFuncs.ColorIt(ownerEntity.Name, gProfileColor[owner or typ])..') ';
             end
