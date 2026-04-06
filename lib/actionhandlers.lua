@@ -895,7 +895,7 @@ actionhandlers.ActorParse = function(actor_id)
 
         local ownerEntity = gFuncs.FindPetOwner(actor_table.TargetIndex);
         if ownerEntity then
-            if (ownerEntity.Id == gStatus.PlayerId) then
+            if (ownerEntity.ServerId == gStatus.PlayerId) then
                 typ = 'my_pet'
                 filt = 'my_pet'
                 dmg = 'mydmg'
@@ -913,7 +913,7 @@ actionhandlers.ActorParse = function(actor_id)
 
         local ownerEntity = gFuncs.FindFellowOwner(actor_table.TargetIndex);
         if ownerEntity then
-            if (ownerEntity.Id == gStatus.PlayerId) then
+            if (ownerEntity.ServerId == gStatus.PlayerId) then
                 typ = 'my_fellow'
                 filt = 'my_fellow'
                 dmg = 'mydmg'
