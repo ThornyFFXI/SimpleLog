@@ -21,11 +21,15 @@
 
 addon.name      = 'simplelog';
 addon.author    = 'Created by Byrth, Ported by Spiken';
-addon.version   = '0.1.2';
+addon.version   = '0.1.3';
 addon.desc      = 'Combat log Parser';
 addon.link      = 'https://github.com/Spike2D/SimpleLog';
 
 require('common');
+if (ashita.addons_version >= 4.3) then
+    addon.instance:enable_feature(addon_feature.use_packet_chunks);
+end
+
 require('lib\\constants');
 chat				= require('chat');
 UTF8toSJIS			= require('lib\\shift_jis')
