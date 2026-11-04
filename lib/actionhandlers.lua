@@ -1032,8 +1032,8 @@ actionhandlers.SpellParse = function (act)
                 spell.data = get_weapon_skill[abil_ID]
             end
             if spell.data then
-                spell.name = gFuncs.ColorIt(spell.data.Name[gProfileSettings.lang.object], act.actor.type == 'mob' and gProfileColor.mobwscol or gProfileColor.wscol)
-                spell.weapon_skill = gFuncs.ColorIt(spell.data.Name[gProfileSettings.lang.object], act.actor.type == 'mob' and gProfileColor.mobwscol or gProfileColor.wscol)
+                spell.name = gFuncs.ColorIt(spell.data.Name[gProfileSettings.lang.object], act.actor.type == 'mob' and gProfileColor.mobwscol or gProfileColor.wscol):gsub('[^%w :-\'\",.;<>?]', '')
+                spell.weapon_skill = gFuncs.ColorIt(spell.data.Name[gProfileSettings.lang.object], act.actor.type == 'mob' and gProfileColor.mobwscol or gProfileColor.wscol):gsub('[^%w :-\'\",.;<>?]', '')
             end
         elseif msg_ID == 303 then
             spell.data = get_job_ability[74] -- Divine Seal
